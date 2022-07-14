@@ -1,0 +1,19 @@
+{
+  "name": "presale",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "deploy1": "truffle migrate -f 1 --to 1 --network dev ",
+    "deploy2": "truffle migrate -f 2 --to 2 --network dev ",
+    "flattened": "truffle-flattener contracts/$npm_config_name > flattened/$npm_config_name",
+    "flatten":"npm run flattened",
+    "deployAll":"yarn deploy1 && yarn deploy2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.6.0",
+    "abi-to-sol": "^0.6.2",
+    "truffle-flatten": "^1.0.8",
+    "web3": "^1.7.4"
+  }
+}
