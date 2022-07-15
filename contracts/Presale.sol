@@ -789,14 +789,14 @@ contract HBTPresale is Ownable {
     mapping(address => PresaleInfo) public purchaseInfo;
 
     IVault public  vault;
-    uint256 public immutable clifTime;
+    uint256 public immutable cliffTime;
     uint256 public totalTokenSold;
     uint256 public totalUSDCRaised;
     uint256 immutable maxTrenches;
     uint256 public constant REFERRAL_COMISSION = 25; //2.5%
     uint256 public constant BONUS = 25; //2.5%
 
-    uint256 constant ONE_DAY = 1;
+    uint256 constant ONE_DAY = 60;
     uint256 public constant ONE_MONTH = 30 * ONE_DAY;
 
     uint256 public tokenPrice;
@@ -816,13 +816,13 @@ contract HBTPresale is Ownable {
         IERC20 _USDC,
         IERC20 _HBT,
         uint256 _tokenPrice,
-        uint256 _clifTime,
+        uint256 _cliffTime,
         uint256 _maxTrenches
     ) {
         USDC = _USDC;
         HBT = _HBT;
         tokenPrice = _tokenPrice;
-        clifTime = _clifTime;
+        cliffTime = _cliffTime;
         maxTrenches = _maxTrenches;
     }
 
@@ -845,7 +845,7 @@ contract HBTPresale is Ownable {
 
 
     function baseTime() public view returns(uint256){
-        return presaleEndTime+clifTime;
+        return presaleEndTime+cliffTime;
     }
 
     function setReferralManager(IReferralManager _referralManager)
@@ -889,11 +889,13 @@ contract HBTPresale is Ownable {
         purchaseInfo[msg.sender].totalTokenBought += finalHBTAmountAfterBonus;
         purchaseInfo[msg.sender].totalUSDCPaid += usdcAmount;
 
-        uint256 preVaultReceipt = vault.balanceOf(address(this));
-        vault.deposit(finalHBTAmountAfterBonus);
-        uint256 finalVaultReceiptBalance = vault.balanceOf(address(this)) -
-            preVaultReceipt;
-        purchaseInfo[msg.sender].vaultReceiptAmount += finalVaultReceiptBalance;
+        // uint256 preVaultReceipt = vault.balanceOf(address(this));
+        // // vault.deposit(finalHBTAmountAfterBonus);
+        // uint256 finalVaultReceiptBalance = vault.balanceOf(address(this)) -
+        //     preVaultReceipt;
+        // purchaseInfo[msg.sender].vaultReceiptAmount += finalVaultReceiptBalance;
+
+        
         totalTokenSold += finalHBTAmountAfterBonus;
         totalUSDCRaised += usdcAmount;
 
@@ -905,6 +907,7 @@ contract HBTPresale is Ownable {
     }
 
     function withdrawToken(IERC20 _token) public onlyOwner {
+        require(address(_token) != address(vault),"Can't withdraw receipt tokens");
         _token.safeTransfer(msg.sender, _token.balanceOf(address(this)));
     }
 
@@ -921,42 +924,5 @@ contract HBTPresale is Ownable {
         return stakedFinalBalance - purchaseInfo[user].totalTokenBought;
     }
     
-    function claim() public {
-        require(presaleEndTime > 0, "Withdraw not enabled");
-        require(
-            baseTime() < block.timestamp,
-            "Clif period not passed"
-        );
-
-        require(
-            purchaseInfo[msg.sender].nextClaimTime < block.timestamp,
-            "Time not passed"
-        );
-        require(purchaseInfo[msg.sender].claimedTrenches< maxTrenches,"Exceeds Max Trenches");
-        uint256 totalVestedAmount = purchaseInfo[msg.sender].vaultReceiptAmount;
-        uint256 timePassed = block.timestamp - baseTime();
-        uint256 claimableTrenches = timePassed/ONE_MONTH;
-
-        if(claimableTrenches> maxTrenches){
-            claimableTrenches = maxTrenches;
-        }
-        claimableTrenches = claimableTrenches-purchaseInfo[msg.sender].claimedTrenches;
-      
-        uint256 amountPerTrench = totalVestedAmount/maxTrenches;
-
-        uint256 tokensToClaim = amountPerTrench* claimableTrenches;
-
-        purchaseInfo[msg.sender].totalAmountClaimed += tokensToClaim;
-        purchaseInfo[msg.sender].nextClaimTime += block.timestamp + ONE_MONTH -( timePassed%ONE_MONTH);
-        purchaseInfo[msg.sender].claimedTrenches += claimableTrenches;
-
-        uint256 preHBTBal = HBT.balanceOf(address(this));
-        vault.withdraw(tokensToClaim);
-        uint256 finalHBTBal = HBT.balanceOf(address(this)) - preHBTBal;
-        purchaseInfo[msg.sender].totalHBTClaimed += finalHBTBal;
-
-        HBT.safeTransfer(msg.sender, finalHBTBal);
-
-        emit onClaim(finalHBTBal, tokensToClaim);
-    }
+   
 }

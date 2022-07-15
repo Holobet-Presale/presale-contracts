@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "deploy1": "truffle migrate -f 1 --to 1 --network dev ",
+    "deploy1": "truffle migrate -f 1 --to 1 --network dashboard ",
     "deploy2": "truffle migrate -f 2 --to 2 --network dev ",
     "flattened": "truffle-flattener contracts/$npm_config_name > flattened/$npm_config_name",
     "flatten":"npm run flattened",

@@ -2,4 +2,6 @@ addresses.txt
 node_modules
 build
 migrations
+secondPhase
+
 

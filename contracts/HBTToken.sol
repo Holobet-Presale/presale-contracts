@@ -919,35 +919,7 @@ library SafeERC20 {
     }
 }
 
-// File: contracts/WrappedHBT.sol
 
-pragma solidity ^0.8.15;
-
-
-
-contract WrappedHBT is ERC20("Wrapped HBT", "wHBT") {
-    using SafeERC20 for IERC20;
-    IERC20 public immutable HBT;
-
-    constructor(IERC20 _HBT) {
-        HBT = _HBT;
-    }
-
-    function mint(uint256 amount) public {
-        HBT.safeTransferFrom(msg.sender, address(this), amount);
-        _mint(msg.sender, amount);
-    }
-
-    function mintFor(address user, uint256 amount) public {
-        HBT.safeTransferFrom(msg.sender, address(this), amount);
-        _mint(user, amount);
-    }
-
-    function withdraw(uint256 amount) public {
-        _burn(msg.sender, amount);
-        HBT.safeTransfer(msg.sender, amount);
-    }
-}
 
 // File: contracts/HBTToken.sol
 
@@ -955,10 +927,7 @@ pragma solidity ^0.8.0;
 
 
 
-interface IRewardPool{
-    function notifyRewardAmount(uint256 reward) external;
 
-}
 
 contract HolobetToken is ERC20, Ownable {
     mapping(address => bool) public ammPairs;
@@ -967,28 +936,25 @@ contract HolobetToken is ERC20, Ownable {
     uint256 public constant STAKING_REWARD_FEE = 10; //1%;
     uint256 public constant MARKETING_FEE = 10; //1%;
     uint256 public constant PRICE_BACKING_FEE = 30; //3%;
-    WrappedHBT public immutable wHBT;
-    uint256 public constant MAX_SUPPLY = 1000 * 1e18;
+    uint256 public constant MAX_SUPPLY = 1000000000 * 1e18;
 
     address public rewardPool;
     address public marketingAddress;
     address public priceBackingAddress;
 
-    bool public rewardTriggerEnabled = true;
+    bool public rewardTriggerEnabled;
 
     constructor(
         address _marketingAddress,
         address _priceBackingAddress
-    ) ERC20("HolobetToken", "HBT") {
+    ) ERC20("Holobet", "HBT") {
         marketingAddress = _marketingAddress;
         priceBackingAddress = _priceBackingAddress;
-        wHBT = new WrappedHBT(IERC20(address(this)));
+        _mint(msg.sender, MAX_SUPPLY);
+
     }
 
-    function mint(address account, uint256 amount) public onlyOwner {
-        require(totalSupply()+ amount <= MAX_SUPPLY,"Max Supply Exceeds");
-        _mint(account, amount);
-    }
+   
 
     function flipRewardTriggerEnabled() public onlyOwner  {
         rewardTriggerEnabled = !rewardTriggerEnabled;
@@ -1031,6 +997,7 @@ contract HolobetToken is ERC20, Ownable {
             uint256  marketingFee = amount * MARKETING_FEE/1000;
             uint256  priceBackingFee = amount * PRICE_BACKING_FEE/1000;
             takeRewardFee(from,stakingRewardFee);
+
             super._transfer(from, marketingAddress, marketingFee);
             super._transfer(from, priceBackingAddress, priceBackingFee);
             super._transfer(from, to, amount-(stakingRewardFee+marketingFee+priceBackingFee));
@@ -1043,17 +1010,17 @@ contract HolobetToken is ERC20, Ownable {
     function takeRewardFee(address from, uint256 amount) internal {
         super._transfer(from, address(this), amount);
 
-        if(rewardTriggerEnabled && rewardPool !=address(0)){
-            notifyRewardPool();
-        }
+        // if(rewardTriggerEnabled && rewardPool !=address(0)){
+        //     notifyRewardPool();
+        // }
     }
 
 
-    function notifyRewardPool() public {
-        require(msg.sender == owner() || msg.sender == address(this),"not allowed");
-        uint256 amount = balanceOf(address(this));
-        super._transfer( address(this), rewardPool, amount);
-        IRewardPool(rewardPool).notifyRewardAmount(amount);
-    }
+    // function notifyRewardPool() public {
+    //     require(msg.sender == owner() || msg.sender == address(this),"not allowed");
+    //     uint256 amount = balanceOf(address(this));
+    //     super._transfer( address(this), rewardPool, amount);
+    //     IRewardPool(rewardPool).notifyRewardAmount(amount);
+    // }
 
 }
